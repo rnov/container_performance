@@ -10,6 +10,7 @@
 #include <iterator>
 #include<future>
 #include <tuple>
+#include <string>
 
 /*********Crono*************/
 std::chrono::system_clock::time_point start, end;
@@ -24,6 +25,15 @@ std::ofstream outfile;
 
 #define ez_life(dst_cont, rand_cont)\
 	(testc::fParam<decltype(dst_cont), decltype(rand_cont)>)
+
+#define ez_game(param)\
+	(testc::varidic<decltype(param)>)
+
+#define ez_game2(param, para2)\
+	(testc::varidic<decltype(param), decltype(para2)>)
+
+#define ez_game3(param, para2, para3)\
+		(testc::varidic<decltype(param), decltype(para2), decltype(para3)>)
 
 #define Print_time(fun, ...)\
      start = std::chrono::system_clock::now();\
@@ -204,8 +214,7 @@ void search( Container& cont, const Srccont& src_cont) {
 
 template <typename Container, typename  Srccont>
 void search_sets(Container& cont, const Srccont& src_cont) {
-
-	assert(is_unset(cont));  // is_set(cont) || is_unset(cont)
+//	assert(is_set(cont));  // is_set(cont) || is_unset(cont)
 	for (auto& value : src_cont) {
 		cont.find(value);
 	}
@@ -226,6 +235,37 @@ namespace testc {
 	template<typename Container, typename T>
 	using fParam = void(*) ( Container& cont, const T& src_cont);
 
+	///madness
+	template <typename ... Ts>
+	using varidic = void(*) (Ts ... V_args);
+
+	template <typename T>
+	void alg_wrapper(T some , varidic<T> funcptr) {
+		funcptr(some);
+	}
+
+	template <typename T, typename T2>
+	void alg_wrapper(T some, T2 some2, varidic<T, T2> funcptr) {
+		funcptr(some, some2);
+	}
+
+	template <typename T, typename T2, typename T3>
+	void alg_wrapper(T some, T2 some2, T3 some3, varidic<T, T2, T3> funcptr) {
+		funcptr(some, some2, some3);
+	}
+	/*
+	template <typename T, typename T2>
+	void alg_wrapper(T some, varidic<T, T2> funcptr) {
+		funcptr(some, some2);
+	}
+	*/
+	template <typename ... Ts>
+	void alg_wrapper(varidic<Ts ...> funcptr) {
+		funcptr();
+	}
+
+	///
+
 	void print_measures(const std::vector<graph>& times) {
 		for (graph k : times) {
 			std::cout << "nº inserted values: " << k.noperations << " time: " << k.time << " sec" << std::endl;
@@ -240,7 +280,7 @@ namespace testc {
 	}
 
 	template<typename Container, typename T >
-	std::vector<graph> doTests(int ntest, Container& cont, const T& src_cont, fParam<Container&,T> foo) {
+	std::vector<graph> doTests(int ntest, Container& cont, const T& src_cont, fParam<Container&, T> foo) {
 		assert(ntest <= src_cont.size());
 		std::vector<graph> values;
 
@@ -260,15 +300,13 @@ namespace testc {
 		std::vector<graph> values;
 
 		auto steps = src_cont.size() / ntest;
-		std::vector<std::future< std::tuple<unsigned int, double> >> fut_res; // return tuple<unsigned int, double>
-		
+		std::vector<std::future< std::tuple<unsigned int, double> >> fut_res; // return tuple<unsigned int, double>	
 		for (auto operations = steps; operations <= src_cont.size(); operations += steps) {
 			auto copyContainer = cont;  // copy the container
 			T src_aux(std::begin(src_cont), std::begin(src_cont) + operations);  // range of values
 			// using 'insert' instead of 'push_back' becuase std::future<> objects are not CopyConstructible
 			fut_res.insert(std::cend(fut_res), std::async(std::launch::async, operation_time<decltype(cont), decltype(src_cont)>, copyContainer, src_aux, operations, foo));
 		}
-
 		for (auto& fut : fut_res) {
 			auto tuple = fut.get();
 			values.push_back(graph(std::get<0>(tuple), std::get<1>(tuple))); // 0 -> operation, 1 -> time
@@ -279,13 +317,71 @@ namespace testc {
 } // testc
 
 /*************files cvs*************************/
-void cvs_columns(std::string name, const std::vector<testc::graph> data){
-    outfile.open(name, std::ios_base::app);
-    assert(outfile.is_open());
-    for(const testc::graph& res : data) {
-        outfile << res.noperations <<"     "<< res.time<<'\n';
-    }
-    outfile.close();
+void cvs_columns(std::string file_name, const std::vector<testc::graph> data, std::string op_col = "operations", std::string time_col = "time") {
+	outfile.open(file_name, std::ios_base::app);
+	assert(outfile.is_open());
+	outfile << op_col << "," << time_col << '\n';
+	for (const testc::graph& res : data) {
+		outfile << res.noperations << "," << res.time << '\n';
+	}
+	outfile.close();
+}
+
+
+
+/// read/write source(random, sequencial) data to files
+template<typename T>
+void write_src(std::string file_name, const std::vector<T>& src_container) {
+	outfile.open(file_name, std::ios_base::app);
+	assert(outfile.is_open());
+	for (const auto& val : src_container) {
+		outfile << val << '\n';
+	}
+	outfile.close();
+}
+
+template<typename T>
+std::vector<T> read_src(std::string file_name) {
+	std::ifstream infile;
+	infile.open(file_name, std::ios_base::in );
+	assert(infile.is_open());
+
+	std::vector<T> src_container;
+	T value;
+	infile >> value; infile.get();
+	while (!infile.eof()) {
+		src_container.push_back(value);
+		infile >> value;
+		infile.get();		
+	}
+	return src_container;
+}
+
+// does not append and it will not
+template<typename T>
+void write_src_bin(std::string file_name, const std::vector<T>& src_container) {
+	outfile.open(file_name, std::ios_base::app || std::ios_base::binary);
+	assert(outfile.is_open());
+	for (const auto& val : src_container) {
+		outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
+	}
+	outfile.close();
+}
+ 
+template<typename T>
+std::vector<T> read_src_bin(std::string file_name) {
+	std::ifstream infile;
+	infile.open(file_name, std::ios_base::in || std::ios_base::binary);  
+	assert(infile.is_open());
+
+	std::vector<T> src_container;
+	T value;
+	infile.read(reinterpret_cast<char*>(&value), sizeof value);
+	while (!infile.eof()) {
+		src_container.push_back(value);
+		infile.read(reinterpret_cast<char*>(&value), sizeof value);		
+	}
+	return src_container;
 }
 
 /********Vector***********/
