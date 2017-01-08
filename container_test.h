@@ -8,9 +8,10 @@
 #include <chrono>
 #include <fstream>
 #include <iterator>
-#include<future>
+#include <future>
 #include <tuple>
 #include <string>
+#include "wrappers.h"
 
 /*********Crono*************/
 std::chrono::system_clock::time_point start, end;
@@ -24,16 +25,7 @@ std::random_device rd;  // only used once to initialise (seed) engine
 std::ofstream outfile;
 
 #define ez_life(dst_cont, rand_cont)\
-	(testc::fParam<decltype(dst_cont), decltype(rand_cont)>)
-
-#define ez_game(param)\
-	(testc::varidic<decltype(param)>)
-
-#define ez_game2(param, para2)\
-	(testc::varidic<decltype(param), decltype(para2)>)
-
-#define ez_game3(param, para2, para3)\
-		(testc::varidic<decltype(param), decltype(para2), decltype(para3)>)
+		(testc::fParam<decltype(dst_cont), decltype(rand_cont)>)
 
 #define Print_time(fun, ...)\
      start = std::chrono::system_clock::now();\
@@ -41,26 +33,6 @@ std::ofstream outfile;
      end = std::chrono::system_clock::now();\
      elapsed_seconds = end-start;\
 	 std::cout<< "  -elapsed time: " << elapsed_seconds.count() << " s\n";
-
-// checks if the given container is the right function at compile time.
-
-// vector, deque, list, (forward_list not implemented)
-template <template<class T, class =std::allocator<T>> class Container, typename T>
-bool is_sequence(Container<T>& container) {
-	return true;
-}
-
-// set (multiset not implemented)
-template<template<class T, class = std::less<T>, class =std::allocator<T>> class Container, typename T>
-bool is_set(Container<T>& container) {
-	return true;
-}
-
-// unordered_set (unordered_multiset not implemented)
-template< template<class T, class =std::hash<T>, class =std::equal_to<T>, class =std::allocator<T>> class Container, typename T, typename k>
-bool is_unset(k cont) {  // Container<T>& container
-	return Container<int> == cont;
-}
 
 /*********templates (vector, list, dqueue, set, unordered_set)*************/
 
@@ -163,7 +135,6 @@ void insertSortetedContaniner_iter(Container& cont, const Srccont& src_cont){
     }
 }
 
-
 /// Delete
 template <typename Container, typename  Srccont>
 void deletefromContaniner(Container& cont, const Srccont& src_cont){
@@ -195,7 +166,6 @@ void deletefromContaniner_iter(Container& cont, const Srccont& src_cont){
 }
 
 /// Search
-
 // accepts any type of stl container, the return value is not important 
 // in case the container does not support random access iterator (like list, set, unordered_set...) the seach is not binary but linear
 template <typename Container, typename  Srccont>
@@ -223,48 +193,9 @@ void search_sets(Container& cont, const Srccont& src_cont) {
 /***************test************************/
 namespace testc {
 
-	// Data structure time/operation measures
-	struct graph {
-		graph() = default;
-		graph(unsigned int n_operations, double time) : noperations(n_operations), time(time) { };
-		unsigned int noperations;  // nº operation (inserts/deletes...)
-		double time;  // time took each
-	};
-
 	// template pointers to functions
 	template<typename Container, typename T>
 	using fParam = void(*) ( Container& cont, const T& src_cont);
-
-	///madness
-	template <typename ... Ts>
-	using varidic = void(*) (Ts ... V_args);
-
-	template <typename T>
-	void alg_wrapper(T some , varidic<T> funcptr) {
-		funcptr(some);
-	}
-
-	template <typename T, typename T2>
-	void alg_wrapper(T some, T2 some2, varidic<T, T2> funcptr) {
-		funcptr(some, some2);
-	}
-
-	template <typename T, typename T2, typename T3>
-	void alg_wrapper(T some, T2 some2, T3 some3, varidic<T, T2, T3> funcptr) {
-		funcptr(some, some2, some3);
-	}
-	/*
-	template <typename T, typename T2>
-	void alg_wrapper(T some, varidic<T, T2> funcptr) {
-		funcptr(some, some2);
-	}
-	*/
-	template <typename ... Ts>
-	void alg_wrapper(varidic<Ts ...> funcptr) {
-		funcptr();
-	}
-
-	///
 
 	void print_measures(const std::vector<graph>& times) {
 		for (graph k : times) {
@@ -274,8 +205,17 @@ namespace testc {
 
 	// auxiliar funtion for measuring time, used for async do test calls
 	template<typename Container, typename T >
-	decltype(auto) operation_time(Container& cont, const T& src_cont, unsigned int n_operations ,fParam<Container&, T> foo) {
-		Print_time(foo, cont, src_cont);
+	decltype(auto) operation_time(Container& cont, const T& src_cont, unsigned int n_operations ,fParam<Container&, T> foo) {	
+		std::chrono::system_clock::time_point start, end;
+		std::chrono::duration<double> elapsed_seconds;
+
+		start = std::chrono::system_clock::now();
+		foo(cont, src_cont);
+		end = std::chrono::system_clock::now();
+
+		elapsed_seconds = end - start;
+		std::cout << "  -elapsed time: " << elapsed_seconds.count() << " s\n";
+		//Print_time(foo, cont, src_cont);
 		return std::make_tuple(n_operations, elapsed_seconds.count());
 	}
 
@@ -317,11 +257,11 @@ namespace testc {
 } // testc
 
 /*************files cvs*************************/
-void cvs_columns(std::string file_name, const std::vector<testc::graph> data, std::string op_col = "operations", std::string time_col = "time") {
+void cvs_columns(std::string file_name, const std::vector<graph> data, std::string op_col = "operations", std::string time_col = "time") {
 	outfile.open(file_name, std::ios_base::app);
 	assert(outfile.is_open());
 	outfile << op_col << "," << time_col << '\n';
-	for (const testc::graph& res : data) {
+	for (const graph& res : data) {  // testc::graph&
 		outfile << res.noperations << "," << res.time << '\n';
 	}
 	outfile.close();

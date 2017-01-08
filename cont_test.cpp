@@ -9,26 +9,56 @@
 #include<future>
 #include<type_traits>
 #include<iostream>
-//#include <boost/intrusive/list.hpp>
 
 #include <algorithm>
+//#include <boost/intrusive/list.hpp>
+template<typename T>
+int show(T a) { return a; }
 
+template<typename T>
+void show(T a) {std::cout<< a<<std::endl; }
 
-// /*
+template<typename T, typename Z>
+void show(T a, Z b) { std::cout << a << std::endl; }
+
+template <typename T,typename ... Ts>
+using arko = T(*) (Ts ... V_args);
+
+template <typename K, typename T>
+void wrapper(T some, arko<K,T> funcptr) {
+	funcptr(some);
+}
+
+template <typename K, typename T, typename T2, typename T3>
+void wrapper(T some, T2 some2, const T3& some3, arko<K, T,T2,const T3&> funcptr) {
+	funcptr(some,some2,some3);
+}
+
+/*  // works
+template<typename T, typename K, typename Iterator>
+std::vector<testc::graph> find(int n_operation, std::vector<T> source, Iterator first, Iterator last, testc::variadic<K, Iterator, Iterator, const T&> funcptr) {
+	return testc::alg_wrapper(n_operation, source, first, last, (testc::variadic<K, decltype(first), decltype(last), const T&>)funcptr);
+}
+
+#define Binary_Search(param1, param2, type)\
+	(testc::variadic<bool, decltype(param1), decltype(param2),const type&>)
+
+#define Upper_Bound(param1, param2, type)\
+	(testc::variadic<decltype(param1), decltype(param1), decltype(param2), const type&>)
+
+#define Lower_Bound(param1, param2, type)\
+	(testc::variadic<decltype(param1), decltype(param1), decltype(param2), const type&>)
+*/
+ //*
 int main(){
+	//wrapper(std::begin(ark),std::end(ark),20, (testc::variadic<bool,decltype(std::begin(ark)), decltype(std::end(ark)), const int&>)std::binary_search);
 
-	std::vector<int> ve{ 4,1,6,8 };	
-	int as = 12;
-	testc::alg_wrapper(std::begin(ve), std::end(ve), ez_game2(std::begin(ve), std::end(ve))std::sort);
-	//testc::alg_wrapper(std::begin(ve), std::end(ve), ez_game3(std::begin(ve), std::end(ve), as)std::fill);
-
-	// testc::varidic<decltype(std::begin(ve)),decltype(std::end(ve))>
-
+	//find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), (testc::variadic<bool, decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::binary_search);
 
     // create vector with random numbers and shuffle it
-    int ini_rand = 1, fin_rand = 20000; // 200000  -> 200k, 500000 -> 500k
-    int sorted_ini=1, sorted_fin = 20000; // 500000 -> 500k
-    unsigned int n_op = 10;  // nº operations
+    int ini_rand = 1, fin_rand = 200000; // 200000  -> 200k, 500000 -> 500k
+    int sorted_ini=1, sorted_fin = 200000; // 500000 -> 500k
+    unsigned int n_op = 20;  // nº operations
 
     // random numbers vector
     auto rand_vector = generate_random_vector(ini_rand, fin_rand, 2000);
@@ -37,7 +67,27 @@ int main(){
     std::vector<int> dst_container_vector;
     generate_seq_container(dst_container_vector, sorted_ini, sorted_fin);
 	
+	// find works for binary_search, lower_bound, upper_bound
+	//std::vector<graph> res1 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Binary_Search(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::binary_search);
+	//std::vector<graph> res11 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), (variadic<bool, decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::binary_search);
+	
+	//std::vector<graph> res2 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Upper_Bound(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::upper_bound);
+	//std::vector<graph> res22 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), (variadic<decltype(std::begin(dst_container_vector)), decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::upper_bound);
+	//std::vector<graph> res3 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Lower_Bound(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::lower_bound);
+	//std::vector<graph> res33 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), (variadic<decltype(std::begin(dst_container_vector)), decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::lower_bound);
 
+
+	start = std::chrono::system_clock::now();
+	std::binary_search(std::begin(dst_container_vector), std::end(dst_container_vector), 20);
+	end = std::chrono::system_clock::now();
+	elapsed_seconds = end - start;
+	std::cout << "  -elapsed time: " << elapsed_seconds.count() << " s\n";
+
+	Print_time(std::binary_search, std::begin(dst_container_vector), std::end(dst_container_vector), 20);
+
+	//testc::find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), params3b(bool, std::begin(dst_container_vector), std::end(dst_container_vector), int>)std::binary_search);
+	//testc::find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector),(testc::variadic<bool, decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::binary_search);
+	
 ///     Operations
 // /*
 
@@ -93,9 +143,8 @@ int main(){
 //    print_Container(dst_container_set);
 	
 	std::cout << "start now!" << '\n';
-	std::vector<testc::graph> some_5async = testc::doTests_async(n_op, dst_container_unset, rand_vector, ez_life(dst_container_unset, rand_vector)search_sets);  // search_sets
+	std::vector<graph> some_5async = testc::doTests_async(n_op, dst_container_unset, rand_vector, ez_life(dst_container_unset, rand_vector)search_sets);  // search_sets
     testc::print_measures(some_5async);
-
 
     return 0;
 }
