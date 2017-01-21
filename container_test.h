@@ -146,16 +146,6 @@ void deletefromContaniner(Container& cont, const Srccont& src_cont){
 }
 
 template <typename Container, typename  Srccont>
-void deletefromContaninersafe(Container& cont, const Srccont& src_cont) {
-	assert(!cont.empty());
-	for (const auto& value : src_cont) {
-		auto pos = std::find(std::begin(cont), std::end(cont), value);
-		if(pos != std::end(cont))
-			cont.erase(pos);
-	}
-}
-
-template <typename Container, typename  Srccont>
 void deletefromContaniner_iter(Container& cont, const Srccont& src_cont){
     assert(!cont.empty());
     for(const auto& value : src_cont) {
@@ -245,7 +235,7 @@ namespace testc {
 			auto copyContainer = cont;  // copy the container
 			T src_aux(std::begin(src_cont), std::begin(src_cont) + operations);  // range of values
 			// using 'insert' instead of 'push_back' becuase std::future<> objects are not CopyConstructible
-			fut_res.insert(std::cend(fut_res), std::async(std::launch::async, operation_time<decltype(cont), decltype(src_cont)>, copyContainer, src_aux, operations, foo));
+			fut_res.push_back( std::async(std::launch::async, operation_time<decltype(cont), decltype(src_cont)>, copyContainer, src_aux, operations, foo));
 		}
 		for (auto& fut : fut_res) {
 			auto tuple = fut.get();

@@ -50,7 +50,10 @@ std::vector<testc::graph> find(int n_operation, std::vector<T> source, Iterator 
 	(testc::variadic<decltype(param1), decltype(param1), decltype(param2), const type&>)
 */
  //*
+
+//*
 int main(){
+
 	//wrapper(std::begin(ark),std::end(ark),20, (testc::variadic<bool,decltype(std::begin(ark)), decltype(std::end(ark)), const int&>)std::binary_search);
 
 	//find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), (testc::variadic<bool, decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::binary_search);
@@ -68,7 +71,14 @@ int main(){
     generate_seq_container(dst_container_vector, sorted_ini, sorted_fin);
 	
 	// find works for binary_search, lower_bound, upper_bound
-	//std::vector<graph> res1 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Binary_Search(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::binary_search);
+	//std::vector<graph> res1 = alg_wrapper(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Equal_Range(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::equal_range);
+
+	std::vector<graph> res1 = alg_wrapper(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Fill(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::fill);
+
+	
+	//std::vector<graph> res1 = alg_wrapper(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Count(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::count);
+	//std::vector<graph> res1 = alg_wrapper(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Find(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::find);
+	//std::vector<graph> res1 = alg_wrapper(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Binary_Search(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::binary_search);
 	//std::vector<graph> res11 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), (variadic<bool, decltype(std::begin(dst_container_vector)), decltype(std::end(dst_container_vector)), const int&>)std::binary_search);
 	
 	//std::vector<graph> res2 = find(20, rand_vector, std::begin(dst_container_vector), std::end(dst_container_vector), Upper_Bound(std::begin(dst_container_vector), std::end(dst_container_vector), int)std::upper_bound);
@@ -143,7 +153,7 @@ int main(){
 //    print_Container(dst_container_set);
 	
 	std::cout << "start now!" << '\n';
-	std::vector<graph> some_5async = testc::doTests_async(n_op, dst_container_unset, rand_vector, ez_life(dst_container_unset, rand_vector)search_sets);  // search_sets
+	std::vector<graph> some_5async = testc::doTests_async(n_op, dst_container_list, rand_vector, ez_life(dst_container_list, rand_vector)search);  // search_sets
     testc::print_measures(some_5async);
 
     return 0;
