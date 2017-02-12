@@ -15,7 +15,6 @@
 /*********Crono*************/
 std::chrono::system_clock::time_point start, end;
 std::chrono::duration<double> elapsed_seconds;
-//std::time_t end_time;
 
 /**********random**************/
 std::random_device rd;  // only used once to initialise (seed) engine

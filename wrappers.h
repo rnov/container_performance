@@ -45,7 +45,7 @@
 struct graph {
 	graph() = default;
 	graph(unsigned int n_operations, double time) : noperations(n_operations), time(time) { };
-	unsigned int noperations;  // nº operation (inserts/deletes...)
+	unsigned int noperations;  // n operation (inserts/deletes...)
 	double time;  // time took each
 };
 
@@ -69,7 +69,7 @@ std::vector<graph> alg_wrapper(int n_op, std::vector<ParamType3>vec, ParamType s
 		end = std::chrono::system_clock::now();
 
 		elapsed_seconds = end - start;
-		std::cout << "  -elapsed time: " << elapsed_seconds.count() << "sec nº operations: " << operations << '\n';  // just for tests
+		std::cout << "  -elapsed time: " << elapsed_seconds.count() << "sec nï¿½ operations: " << operations << '\n';  // just for tests
 		values.push_back(graph(operations, elapsed_seconds.count()));
 	}
 	return values;
@@ -88,7 +88,7 @@ std::vector<graph> alg_wrapper(int n_op, container cont,ParamType some, ParamTyp
 		end = std::chrono::system_clock::now();
 
 		elapsed_seconds = end - start;
-		std::cout << "  -elapsed time: " << elapsed_seconds.count() << "sec nº operations: " << operations << '\n';  // just for tests
+		std::cout << "  -elapsed time: " << elapsed_seconds.count() << "sec nï¿½ operations: " << operations << '\n';  // just for tests
 		values.push_back(graph(operations, elapsed_seconds.count()));
 	}
 	return values;
