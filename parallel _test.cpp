@@ -17,7 +17,7 @@ int main() {
 	// create vector with random numbers and shuffle it
     int ini_rand = 1, fin_rand = 20000; // 200000  -> 200k, 500000 -> 500k
     int sorted_ini=1, sorted_fin = 20000; // 500000 -> 500k
-    unsigned int n_op = 10;  // nº operations
+    unsigned int n_op = 10;  // n operations
 
     // random numbers vector
     auto rand_vector = generate_random_vector(ini_rand, fin_rand, 2000);

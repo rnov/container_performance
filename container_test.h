@@ -11,7 +11,6 @@
 #include <future>
 #include <tuple>
 #include <string>
-#include "wrappers.h"
 
 /*********Crono*************/
 std::chrono::system_clock::time_point start, end;
@@ -23,9 +22,6 @@ std::random_device rd;  // only used once to initialise (seed) engine
 
 /********cvs file*************/
 std::ofstream outfile;
-
-#define ez_life(dst_cont, rand_cont)\
-		(testc::fParam<decltype(dst_cont), decltype(rand_cont)>)
 
 #define Print_time(fun, ...)\
      start = std::chrono::system_clock::now();\
@@ -51,10 +47,11 @@ void print_Container(const Container& vec) {
 // generates src container with values within given range
 // short, int, long, long long, unsigned short, unsigned int, unsigned long, or unsigned long long
 //***
-std::vector<int> generate_random_vector(int ini, int end, int num=0){
+template<typename T>
+std::vector<T> generate_random_vector(T ini, T end, int num=0){
 
     assert(ini <= end && end >= num && num >=0);
-    std::vector<int> random_vec;
+    std::vector<T> random_vec;
     std::mt19937 g(rd());
     if(!num){
         // generate values
@@ -64,7 +61,7 @@ std::vector<int> generate_random_vector(int ini, int end, int num=0){
         // shuffle vector values
         std::shuffle(random_vec.begin(), random_vec.end(), g);
     }else{
-        std::uniform_int_distribution<> distr(ini, end);
+        std::uniform_int_distribution<T> distr(ini, end);
         for(auto i=0; i < num; i++){
             random_vec.push_back(distr(g));
         }
@@ -72,37 +69,11 @@ std::vector<int> generate_random_vector(int ini, int end, int num=0){
     return random_vec;
 }
 
-// generates sorted container -> vector, list, dqueue.
-template <template<class T, class= std::allocator<T>> class Container, typename T>
-void generate_seq_container(Container<T>& container, int ini, int end){
-    assert(ini <= end);
-    // generate values
-    for(auto value = ini; value <= end; value++) {
-        container.push_back(value);
-    }
-}
 
-//template <template<class Key, class= std::less<Key>, class= std::allocator<Key>> class Container, typename Key>
-//void generate_seq_container(Container<Key>& container, int ini, int end){
-template <typename Container>
-void generate_container(Container& container, int ini, int end){
-    assert(ini <= end);
-    // generate values
-    for(auto value = ini; value <= end; value++) {
-        container.insert(value);
-    }
-}
-
-template <typename iterator>
-std::vector<int> shuffle_container(iterator begin, iterator end){
-
-    std::vector<int> sh_cont;
-    for(auto i= begin; i != end; ++i)
-        sh_cont.push_back(*i);
-
+template <typename It>
+void shuffle_container(It begin, It end){
     std::mt19937 g(rd());
-    std::shuffle(std::begin(sh_cont), std::end(sh_cont), g);
-    return sh_cont;
+    std::shuffle(begin, end, g);
 }
 
 /// Insert
@@ -193,6 +164,13 @@ void search_sets(Container& cont, const Srccont& src_cont) {
 /***************test************************/
 namespace testc {
 
+	struct graph {
+		graph() = default;
+		graph(unsigned int n_operations, double time) : noperations(n_operations), time(time) { };
+		unsigned int noperations;  // nº operation (inserts/deletes...)
+		double time;  // time took each
+	};
+
 	// template pointers to functions
 	template<typename Container, typename T>
 	using fParam = void(*) ( Container& cont, const T& src_cont);
@@ -205,7 +183,8 @@ namespace testc {
 
 	// auxiliar funtion for measuring time, used for async do test calls
 	template<typename Container, typename T >
-	decltype(auto) operation_time(Container& cont, const T& src_cont, unsigned int n_operations ,fParam<Container&, T> foo) {	
+//	auto operation_time(Container& cont, const T& src_cont, unsigned int n_operations ,fParam<Container&, T> foo) {
+    auto operation_time(Container cont, T src_cont, unsigned int n_operations ,fParam<Container, T> foo) {
 		std::chrono::system_clock::time_point start, end;
 		std::chrono::duration<double> elapsed_seconds;
 
@@ -218,6 +197,38 @@ namespace testc {
 		//Print_time(foo, cont, src_cont);
 		return std::make_tuple(n_operations, elapsed_seconds.count());
 	}
+
+    template<typename F, typename... TS>
+    std::vector<std::chrono::duration<double>> uni_alg_test(F function, TS... args){
+        std::vector< std::chrono::duration<double> > values;
+
+        start = std::chrono::system_clock::now();
+        function(args...);
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        //std::cout<<elapsed_seconds.count()<<'\n';
+        values.push_back(elapsed_seconds);
+        return values;
+    };
+
+
+    template<typename C, typename F, typename... TS>
+    std::vector<graph> doTest_new(C container, F function, TS... args){
+        std::vector<graph> values;
+
+        for(const auto& val : container){
+            start = std::chrono::system_clock::now();
+            function(args..., val);
+            end = std::chrono::system_clock::now();
+            elapsed_seconds = end-start;
+            std::cout<<elapsed_seconds.count()<<'\n';
+            //elapsed_seconds += end-start;
+        }
+        //values.push_back(elapsed_seconds);
+        return values;
+    };
+
+
 
 	template<typename Container, typename T >
 	std::vector<graph> doTests(int ntest, Container& cont, const T& src_cont, fParam<Container&, T> foo) {
@@ -233,26 +244,26 @@ namespace testc {
 		}
 		return values;
 	}
-
-	template<typename Container, typename T >
-	std::vector<graph> doTests_async(int ntest, Container& cont, const T& src_cont, fParam<Container&, T> foo) {
-		assert(ntest <= src_cont.size());
-		std::vector<graph> values;
-
-		auto steps = src_cont.size() / ntest;
-		std::vector<std::future< std::tuple<unsigned int, double> >> fut_res; // return tuple<unsigned int, double>	
-		for (auto operations = steps; operations <= src_cont.size(); operations += steps) {
-			auto copyContainer = cont;  // copy the container
-			T src_aux(std::begin(src_cont), std::begin(src_cont) + operations);  // range of values
-			// using 'insert' instead of 'push_back' becuase std::future<> objects are not CopyConstructible
-			fut_res.insert(std::cend(fut_res), std::async(std::launch::async, operation_time<decltype(cont), decltype(src_cont)>, copyContainer, src_aux, operations, foo));
-		}
-		for (auto& fut : fut_res) {
-			auto tuple = fut.get();
-			values.push_back(graph(std::get<0>(tuple), std::get<1>(tuple))); // 0 -> operation, 1 -> time
-		}
-		return values;
-	}
+//*
+//	template<typename Container, typename T >
+//	std::vector<graph> doTests_async(int ntest, Container& cont, const T& src_cont, fParam<Container&, T> foo) {
+//		assert(ntest <= src_cont.size());
+//		std::vector<graph> values;
+//
+//		auto steps = src_cont.size() / ntest;
+//		std::vector<std::future< std::tuple<unsigned int, double> >> fut_res; // return tuple<unsigned int, double>
+//		for (auto operations = steps; operations <= src_cont.size(); operations += steps) {
+//			auto copyContainer = cont;  // copy the container
+//			T src_aux(std::begin(src_cont), std::begin(src_cont) + operations);  // range of values
+//			// using 'insert' instead of 'push_back' because std::future<> objects are not CopyConstructible
+//			fut_res.insert(std::cend(fut_res), std::async(std::launch::async, operation_time<decltype(cont), decltype(src_cont)>, copyContainer, src_aux, operations, foo));
+//		}
+//		for (auto& fut : fut_res) {
+//			auto tuple = fut.get();
+//			values.push_back(graph(std::get<0>(tuple), std::get<1>(tuple))); // 0 -> operation, 1 -> time
+//		}
+//		return values;
+//	}//*/
 
 } // testc
 
@@ -300,7 +311,7 @@ std::vector<T> read_src(std::string file_name) {
 // does not append and it will not
 template<typename T>
 void write_src_bin(std::string file_name, const std::vector<T>& src_container) {
-	outfile.open(file_name, std::ios_base::app || std::ios_base::binary);
+	outfile.open(file_name, std::ios_base::app | std::ios_base::binary);
 	assert(outfile.is_open());
 	for (const auto& val : src_container) {
 		outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
@@ -311,7 +322,7 @@ void write_src_bin(std::string file_name, const std::vector<T>& src_container) {
 template<typename T>
 std::vector<T> read_src_bin(std::string file_name) {
 	std::ifstream infile;
-	infile.open(file_name, std::ios_base::in || std::ios_base::binary);  
+	infile.open(file_name, std::ios_base::in | std::ios_base::binary);
 	assert(infile.is_open());
 
 	std::vector<T> src_container;
@@ -322,18 +333,6 @@ std::vector<T> read_src_bin(std::string file_name) {
 		infile.read(reinterpret_cast<char*>(&value), sizeof value);		
 	}
 	return src_container;
-}
-
-/********Vector***********/
-
-template <typename T>
-void insertSorteted2(std::vector<T>& vec, T& value){
-    assert(!vec.empty());
-    auto it = vec.begin();
-    while(*it < value  &&  it != vec.end()){
-        ++it;
-    }
-    vec.insert(it, value);
 }
 
 #endif //CONTAINER_PERFORMANCE_CONTAINER_TEST_H_H
